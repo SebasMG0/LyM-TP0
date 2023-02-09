@@ -1,7 +1,7 @@
 from Tokenizador import tokenizador
 
 archivo= """
- ROBOT_R
+ ROBOT_r
  VARS nom , x , y , one ;
  PROCS
  putCB [|c,b| assignTo : 1 , one ;
@@ -34,12 +34,14 @@ def initParser(cadena:str):
     instrucciones= formato(cadena)
 
     try:
-        tk.getToken(instrucciones[0].lower())[0].token=='STR'
-    except AttributeError:
+        if tk.getToken(instrucciones[0]).token!='STR': raise Exception
+    except Exception:
         return False, 'El programa no empieza con ROBOT_R'
 
     for w in instrucciones[1:]:
         token= tk.getToken(w.lower())[1]
+
+    return True
 
 
 
@@ -52,5 +54,5 @@ def check(tipo:str):
     elif tipo== 'VAR':
         pass
 
-#print(initParser(archivo))
-print(formato(archivo))
+print(initParser(archivo))
+#print(formato(archivo))

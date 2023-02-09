@@ -84,7 +84,7 @@ class tokenizador():
 
     def getToken(self, word: str):
         try:
-            token = self.alphabet[word]
+            token = self.lang[word.lower()]
         except KeyError:
             token= 'VAR'
         return token
