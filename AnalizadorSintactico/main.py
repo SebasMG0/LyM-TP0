@@ -49,5 +49,8 @@ def check(tipo:str):
         pass
     elif tipo== 'FUNCTION':
         pass
+    elif tipo== 'VAR':
+        pass
 
-print(initParser(archivo))
+#print(initParser(archivo))
+print(formato(archivo))
