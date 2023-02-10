@@ -47,19 +47,44 @@ def initParser(cadena:str):
         return False, 'El programa no empieza con ROBOT_R'
 
     #Recorriendo las palabras de modo controlado utilizando un generador
-    word = nextWord(instrucciones)
-    w = word.__next__()
+    generator = nextWord(instrucciones)
+    actualWord = generator.__next__()
 
     try:
-        while (w):
-            print(w)
-            w=word.__next__()
+        while (actualWord):
+
+            if actualWord == 'COMMAND':
+                checkSeparator(generator.__next__(), 'COLON')
+                actualWord=checkCommand()
+            #Falta añadir el resto. De lo contrario se queda en un blucle infinito
+            actualWord=generator.__next__()
+
     except StopIteration:
         return True
 
 
-def check(tipo:tuple):
-    pass
+def checkCommand(actualWord:tuple,  word, generator):
+    for i in range(len(actualWord.parameters) - 1):
+        checkCategory( nxWord=word.__next__(), actualWord=actualWord, index=i)
+        checkSeparator(generator= generator, separator= 'COMMA')
+
+    checkCategory(nxWord=word.__next__(), actualWord=actualWord, index=len(actualWord.parameters)-1)
+    checkSeparator(generator=generator, separator='STMFIN')
+    return word.__next__()
+
+
+# TODO if nxWord.category=='VAR': checkear si la variable fue definida (Me encargo yo)
+
+def checkCategory(nxWord:tuple, actualWord:tuple, index:int):
+    if nxWord.category not in actualWord.types()[index]:
+        return False, 'El tipo de dato no coincide con los tipos de datos permitidos'
+
+def checkSeparator(generator, separator:str ):
+    if generator.__next__().token != separator:
+        return False, f'El separador es incorrecto. Se esperaba: "{separator}"'
+
+
+
 
 print(initParser(archivo))
 #print(formato(archivo))
