@@ -21,11 +21,19 @@ tk = tokenizador()
 vars, funtions= {}, {}
 
 def formato(cadena:str):
+    """
+    Función para separar las palabras de la cadena
+    :param cadena: str
+    :return: pf: List
+    """
     p, pf= cadena.replace('\n', ' ').replace('  ',' ').split(' '), []
     for w in p:
         if len(w)>0:
             pf+= tk.filterSymbol(w)
     return pf
+def nextWord(instrucciones:list):
+    for w in instrucciones[1:]:
+        yield tk.getToken(w.lower())
 
 def initParser(cadena:str):
     vars={}
@@ -38,21 +46,20 @@ def initParser(cadena:str):
     except Exception:
         return False, 'El programa no empieza con ROBOT_R'
 
-    for w in instrucciones[1:]:
-        token= tk.getToken(w.lower())[1]
+    #Recorriendo las palabras de modo controlado utilizando un generador
+    word = nextWord(instrucciones)
+    w = word.__next__()
 
-    return True
+    try:
+        while (w):
+            print(w)
+            w=word.__next__()
+    except StopIteration:
+        return True
 
 
-
-def check(tipo:str):
-    #['CHAR', 'NUM', 'VAR', 'FN', 'DIR', 'LOO', 'CON', 'ORI', 'FUN', 'DEL', 'KWO']
-    if tipo== 'RW':
-        pass
-    elif tipo== 'FUNCTION':
-        pass
-    elif tipo== 'VAR':
-        pass
+def check(tipo:tuple):
+    pass
 
 print(initParser(archivo))
 #print(formato(archivo))
