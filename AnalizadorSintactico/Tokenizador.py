@@ -10,6 +10,7 @@ class tokenizador():
         self.cond = namedtuple("conditional", 'structure category')
 
         # TODO Hay que especificar cuando se hace un bloque y un llamado a un procedimiento
+        # Esta en el "main.py"
 
         # Instructions: It can be a command, control structure or procedure call
         self.lang = {
