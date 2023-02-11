@@ -19,7 +19,7 @@ class tokenizador():
             'assignto': self.f(parameters=('n', 'name'), types=(('NUM'), ('VAR')), category='COMMAND'),
             'goto': self.f(parameters=('x', 'y'), types=(('NUM', 'VAR'), ('NUM', 'VAR')), category='COMMAND'),
             'move': self.f(parameters=('n'), types=(('NUM', 'VAR')), category='COMMAND'),
-            'turn': self.f(parameters=('D'), types=(('LFT', 'RGT', 'ARD')), category='COMMAND'), # Hay que realizar un or en la comprobación
+            'turn': self.f(parameters=('D'), types=(('LFT', 'RGT', 'ARD', 'ORI')), category='COMMAND'), # Hay que realizar un or en la comprobación
             'face': self.f(parameters=('O'), types=(('DIR')), category='COMMAND'),
             'put': self.f(parameters=('n', 'X'), types=(('NUM', 'VAR'), ('BALL', 'CHIP')), category='COMMAND'),
             'pick': self.f(parameters=('n', 'X'), types=(('NUMBER', 'VAR'), ('BALL', 'CHIP')), category='COMMAND'),
@@ -37,15 +37,17 @@ class tokenizador():
 
             # Conditions: delimiter= ':', separator= ','
             'facing': self.f(parameters=('O'), types=(('DIR')), category='CONDITION'),
-            'canput': self.f(parameters=('n', 'X'), types=(('NUM', 'VAR'), ('BALL', 'CHIP')), category='CONDITION'),
-            'canpick': self.f(parameters=('n', 'X'), types=(('NUM', 'VAR'), ('BALL', 'CHIP')), category='CONDITION'),
-            'canmoveindir': self.f(parameters=('n', 'D'), types=(('NUM', 'VAR'), ('DIR')), category='CONDITION'),
-            'canjumpindir': self.f(parameters=('n', 'D'), types=(('NUM', 'VAR'), ('DIR')), category='CONDITION'),
-            'canmovetothe': self.f(parameters=('n', 'O'), types=(('NUM', 'VAR'), ('ORI')), category='CONDITION'),
-            'canjumptothe': self.f(parameters=('n', 'O'), types=(('NUM', 'VAR'), ('ORI')), category='CONDITION'),
+            'canput': self.f(parameters=('n', 'X'), types=(('NUM', 'VAR', 'NTD'), ('BALL', 'CHIP')), category='CONDITION'),
+            'canpick': self.f(parameters=('n', 'X'), types=(('NUM', 'VAR', 'NTD'), ('BALL', 'CHIP')), category='CONDITION'),
+            'canmoveindir': self.f(parameters=('n', 'D'), types=(('NUM', 'VAR', 'NTD'), ('DIR')), category='CONDITION'),
+            'canjumpindir': self.f(parameters=('n', 'D'), types=(('NUM', 'VAR', 'NTD'), ('DIR')), category='CONDITION'),
+            'canmovetothe': self.f(parameters=('n', 'O'), types=(('NUM', 'VAR', 'NTD'), ('ORI')), category='CONDITION'),
+            'canjumptothe': self.f(parameters=('n', 'O'), types=(('NUM', 'VAR', 'NTD'), ('ORI')), category='CONDITION'),
             'not': self.f(parameters=('cond'), types=(('CONDITION')), category='CONDITION'),
 
             # Extra types
+            'ball': self.dt(token='BALL', category='BALL'),
+            'chip': self.dt(token='CHIP', category='CHIP'),
             'north': self.dt(token='NOR', category='DIR'),
             'west': self.dt(token='WES', category='DIR'),
             'south': self.dt(token='SOU', category='DIR'),
