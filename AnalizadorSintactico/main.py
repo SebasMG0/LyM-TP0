@@ -1,8 +1,10 @@
+import string
+
 from Tokenizador import tokenizador
 
 archivo= """
  ROBOT_r
- VARS nom , x , y , one ;
+ VARS nom , 1x , y , one ;
  PROCS
  putCB [|c,b| assignTo : 1 , one ;
  put : c , chips ; put : b , balloons ]
@@ -18,7 +20,7 @@ west ] else : [ nop ] ]
         """
 
 tk = tokenizador()
-vars, funtions= {}, {}
+vars, funtions = {}, {}
 
 def formato(cadena:str):
     """
@@ -51,37 +53,60 @@ def initParser(cadena:str):
     actualWord = generator.__next__()
 
     try:
-        while (actualWord):
 
-            if actualWord == 'COMMAND':
-                checkSeparator(generator.__next__(), 'COLON')
-                actualWord=checkCommand()
+        while (actualWord):
+            if actualWord.category == 'COMMAND':
+                actualWord=checkCommand(actualWord=actualWord, generator= generator )
+            elif actualWord.category == 'KW':
+                checkKW(word= actualWord, generator= generator)
             #Falta añadir el resto. De lo contrario se queda en un blucle infinito
+
+
             actualWord=generator.__next__()
 
     except StopIteration:
         return True
 
+    except Exception as e:
+        return e
 
-def checkCommand(actualWord:tuple,  word, generator):
+
+def checkCommand(actualWord:tuple, generator):
+    checkSeparator(generator.__next__(), 'COLON')
+    if len(actualWord.parameters)==0: return
     for i in range(len(actualWord.parameters) - 1):
-        checkCategory( nxWord=word.__next__(), actualWord=actualWord, index=i)
-        checkSeparator(generator= generator, separator= 'COMMA')
-
-    checkCategory(nxWord=word.__next__(), actualWord=actualWord, index=len(actualWord.parameters)-1)
-    checkSeparator(generator=generator, separator='STMFIN')
-    return word.__next__()
+        checkCategory( nxWord=generator.__next__(), actualWord=actualWord, index=i)
+        checkSeparator(word= generator.__next__(), separator= 'COMMA')
+    checkCategory(nxWord=generator.__next__(), actualWord=actualWord, index=len(actualWord.parameters)-1)
+    checkSeparator(word=generator.__next__(), separator='STMFIN')
 
 
 # TODO if nxWord.category=='VAR': checkear si la variable fue definida (Me encargo yo)
 
 def checkCategory(nxWord:tuple, actualWord:tuple, index:int):
-    if nxWord.category not in actualWord.types()[index]:
+    if nxWord.category not in actualWord.types[index]:
         return False, 'El tipo de dato no coincide con los tipos de datos permitidos'
 
-def checkSeparator(generator, separator:str ):
-    if generator.__next__().token != separator:
+def checkSeparator(word:tuple, separator:str ):
+    if word.token != separator:
         return False, f'El separador es incorrecto. Se esperaba: "{separator}"'
+
+def checkKW(word:tuple, generator):
+
+    if word.token=='VDEF':
+        word= generator.__next__()
+        while  word.token!= 'STMFIN':
+            if word.token[0] not in string.ascii_letters: raise Exception(False, "Nombre de variable inválido!")
+            tk.updateVar(name=word.token ,type= (), category='VAR')
+
+            word= generator.__next__()
+            if word.token== 'COMMA': word= generator.__next__()
+            elif word.token != 'STMFIN': raise Exception( False, f'Error en el separador en la definición de variables! "{word.token}"')
+
+    elif word.category == 'PDEF':
+        return True
+
+
 
 
 

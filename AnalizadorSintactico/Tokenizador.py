@@ -8,10 +8,12 @@ class tokenizador():
         self.f = namedtuple("function", 'parameters types category')
         self.dt = namedtuple("datatype", 'token category')
         self.cond = namedtuple("conditional", 'structure category')
-
+        self.vars= namedtuple('vars', 'token types category')
         # TODO Hay que especificar cuando se hace un bloque y un llamado a un procedimiento
 
         # Instructions: It can be a command, control structure or procedure call
+        self.userVars={}
+
         self.lang = {
             # Commands: delimiter= ':' , separator= ','
             'assignto': self.f(parameters=('n', 'name'), types=(('NUM'), ('VAR')), category='COMMAND'),
@@ -84,7 +86,14 @@ class tokenizador():
 
     def getToken(self, word: str):
         try:
-            token = self.lang[word.lower()]
+            return self.lang[word.lower()]
         except KeyError:
-            token= 'VAR'
-        return token
+            try:
+                return self.userVars[word]
+            except KeyError:
+                self.userVars[word]=self.vars(token=word, types=(), category='NTD')
+                return self.userVars[word]
+
+    def updateVar(self, name:str, type:str, category:str):
+        self.userVars
+
