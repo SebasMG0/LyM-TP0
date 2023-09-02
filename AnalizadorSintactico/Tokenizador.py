@@ -5,7 +5,7 @@ from collections import namedtuple
 class tokenizador():
 
     def __init__(self):
-        self.f = namedtuple("function", 'parameters types category')
+        self.f = namedtuple("function", 'types category')
         self.dt = namedtuple("datatype", 'token category')
         self.cond = namedtuple("conditional", 'structure category')
         self.vars= namedtuple('vars', 'token types category')
@@ -16,17 +16,38 @@ class tokenizador():
 
         self.lang = {
             # Commands: delimiter= ':' , separator= ','
-            'assignto': self.f(parameters=('n', 'name'), types=(('NUM'), ('VAR')), category='COMMAND'),
-            'goto': self.f(parameters=('x', 'y'), types=(('NUM', 'VAR'), ('NUM', 'VAR')), category='COMMAND'),
-            'move': self.f(parameters=('n'), types=(('NUM', 'VAR')), category='COMMAND'),
-            'turn': self.f(parameters=('D'), types=(('LFT', 'RGT', 'ARD', 'ORI')), category='COMMAND'), # Hay que realizar un or en la comprobación
-            'face': self.f(parameters=('O'), types=(('DIR')), category='COMMAND'),
-            'put': self.f(parameters=('n', 'X'), types=(('NUM', 'VAR'), ('BALL', 'CHIP')), category='COMMAND'),
-            'pick': self.f(parameters=('n', 'X'), types=(('NUMBER', 'VAR'), ('BALL', 'CHIP')), category='COMMAND'),
-            'movetothe': self.f(parameters=('n', 'D'), types=(('NUM', 'VAR'), ('ORI')), category='COMMAND'),
-            'moveindir': self.f(parameters=('n', 'O'), types=(('NUM', 'VAR'), ('DIR')), category='COMMAND'),
-            'jumptothe': self.f(parameters=('n', 'D'), types=(('NUM', 'VAR'), ('ORI')), category='COMMAND'),
-            'jumpindir': self.f(parameters=('n', 'O'), types=(('NUM', 'VAR'), ('DIR')), category='COMMAND'),
+            'jump': self.f( 
+                            types=(( 'VAR', 'VAR')), 
+                            category='COMMAND'),
+
+            'walk': self.f(
+                            types=( ('VAR', 'DIR'),
+                                    ('VAR', 'ORI'),
+                                    ('VAR')),
+                            category='COMMAND'),
+
+            'leap': self.f(
+                            types=( ('VAR'),
+                                    ('VAR','DIR'),
+                                    ('VAR', 'ORI')),
+                            category='COMMAND'),
+
+            'turn': self.f( types=(('ORI') #SPECIAL
+                                   ('DIR')),
+                            category='COMMAND'),
+
+            'turnto': self.f( types=(('ORI')),
+                              category='COMMAND'),
+
+            'drop': self.f(types=(('VAR')), 
+                           category='COMMAND'),
+
+            'get': self.f(types=( ('VAR')),
+                          category='COMMAND'),
+
+            'letgo': self.f(types=(('VAR')), 
+                            category='COMMAND'),
+
             'nop': self.f(parameters=(), types=(), category='COMMAND'),
 
             # Conditionals and loops: delimiter= ':', separator= ','
@@ -46,8 +67,6 @@ class tokenizador():
             'not': self.f(parameters=('cond'), types=(('CONDITION')), category='CONDITION'),
 
             # Extra types
-            'ball': self.dt(token='BALL', category='BALL'),
-            'chip': self.dt(token='CHIP', category='CHIP'),
             'north': self.dt(token='NOR', category='DIR'),
             'west': self.dt(token='WES', category='DIR'),
             'south': self.dt(token='SOU', category='DIR'),
@@ -60,9 +79,8 @@ class tokenizador():
             ';': self.dt(token='STMFIN', category='SYM'),  # Statement Fin
             ':': self.dt(token='COLON', category='SYM'),
             ',': self.dt(token='COMMA', category='SYM'),
-            'vars': self.dt(token='VDEF', category='KW'),
-            'procs': self.dt(token='PDEF', category='KW'),
-            'robot_r': self.dt(token='STR', category='KW'),
+            'defVar': self.dt(token='VDEF', category='KW'),
+            'defProc': self.dt(token='PDEF', category='KW'),
             '[': self.dt(token='LSB', category='SYM'),  # Left square bracket
             ']': self.dt(token='RSB', category='SYM'),  # Left square bracket
             '|': self.dt(token='VBAR', category='SYM')
