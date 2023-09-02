@@ -20,7 +20,7 @@ west ] else : [ nop ] ]
         """
 
 tk = tokenizador()
-vars, funtions = {}, {}
+vars, functions = {}, {}
 
 def formato(cadena:str):
     """
@@ -33,6 +33,7 @@ def formato(cadena:str):
         if len(w)>0:
             pf+= tk.filterSymbol(w)
     return pf
+
 def nextWord(instrucciones:list):
     for w in instrucciones[1:]:
         yield tk.getToken(w.lower())
