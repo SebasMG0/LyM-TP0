@@ -8,10 +8,7 @@ class tokenizador():
         self.f = namedtuple("function", 'types category')
         self.dt = namedtuple("datatype", 'token category')
         self.cond = namedtuple("conditional", 'structure category')
-        self.vars= namedtuple('vars', 'token category')
-        # TODO Hay que especificar cuando se hace un bloque y un llamado a un procedimiento
 
-        # Instructions: It can be a command, control structure or procedure call
         self.userVars={}
 
         self.lang = {
@@ -32,7 +29,7 @@ class tokenizador():
                                     ('VAR', 'ORI')),
                             category='COMMAND'),
 
-            'turn': self.f( types=(('ORI') #SPECIAL
+            'turn': self.f( types=(('ORI'), #SPECIAL
                                    ('DIR')),
                             category='COMMAND'),
 
@@ -75,8 +72,8 @@ class tokenizador():
             ';': self.dt(token='STMFIN', category='SYM'),
             ':': self.dt(token='COLON', category='SYM'),
             ',': self.dt(token='COMMA', category='SYM'),
-            'defVar': self.dt(token='VDEF', category='KW'),
-            'defProc': self.dt(token='PDEF', category='KW'),
+            'defvar': self.dt(token='VDEF', category='KW'),
+            'defproc': self.dt(token='PDEF', category='KW'),
             '[': self.dt(token='LSB', category='SYM'),
             ']': self.dt(token='RSB', category='SYM'),
             '|': self.dt(token='VBAR', category='SYM')
@@ -107,9 +104,13 @@ class tokenizador():
             try:
                 return self.userVars[word]
             except KeyError:
-                self.userVars[word]=self.vars(token=word, types=())
-                return self.userVars[word]
+                if str.isdigit(word): return word, "NUM"
+                if str.isdigit(word[0]): raise Exception (False, f"El nombre de la variable es incorrecto: {word}")
+                return word, "VAR"
+                
+    def addVar(self, word):
+        self.userVars[word] = 'VAR'
 
-    def updateVar(self, name:str, type:str, category:str):
-        self.userVars
-
+    def addProc(self, word):
+        self.userVars[word] = 'PROC'
+        

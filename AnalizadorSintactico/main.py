@@ -3,26 +3,16 @@ import string
 from Tokenizador import tokenizador
 
 archivo= """
- ROBOT_r
- VARS nom , x , y , one ;
- PROCS
- putCB [|c,b| assignTo : 1 , one ;
- put : c , chips ; put : b , balloons ]
- goNorth [| |
- while : canMovetoThe : 1 , north do: [ moveInDir : 1 , north ]
-     ]
-     goWest [ | | if : canMoveInDir : 1 , west then: [ MoveInDir : 1 ,
-west ] else : [ nop ] ]
-     [
-     goTo : 3 , 3
-     putcb : 2 ,1
-     ]
+        defVar nom 0
+        defVar x 0
+        defVar y 0
+        defVar z 0
         """
 
 tk = tokenizador()
 vars, functions = {}, {}
 
-def formato(cadena:str):
+def format(cadena:str):
     """
     Función para separar las palabras de la cadena
     :param cadena: str
@@ -34,63 +24,51 @@ def formato(cadena:str):
             pf+= tk.filterSymbol(w)
     return pf
 
-def nextWord(instrucciones:list):
-    for w in instrucciones[1:]:
+def nextWord(instructions:list):
+    for w in instructions:
         yield tk.getToken(w.lower())
 
 def initParser(cadena:str):
-    instrucciones= formato(cadena)
+    instructions= format(cadena)
 
+    #Recorriendo las palabras de modo controlado utilizando un generador   
+    generator= nextWord(instructions)
+    w = next(generator)
     try:
-        if tk.getToken(instrucciones[0]).token!='STR': raise Exception
-    except Exception:
-        return False, 'El programa no empieza con ROBOT_R'
+        while (w):
+            if w.category == 'COMMAND':
+                checkCommand(w=w, generator= generator )
 
-    #Recorriendo las palabras de modo controlado utilizando un generador
-    generator = nextWord(instrucciones)
-    actualWord = generator.__next__()
+            elif w.category == 'KW':
+                checkKW(word= w, generator= generator)
 
-    try:
-
-        while (actualWord):
-            if actualWord.category == 'COMMAND':
-                actualWord=checkCommand(actualWord=actualWord, generator= generator )
-
-            elif actualWord.category == 'KW':
-                checkKW(word= actualWord, generator= generator)
-
-            elif actualWord.category == 'CONDITIONAL':
+            elif w.category == 'CONDITIONAL':
                 checkConditional(generator= generator)
 
-            elif actualWord.category == 'CONDITION':
-                checkCondition(generator=generator)
+            elif w.category == 'CONDITION':
+                checkCondition(generator= generator)
 
-            elif actualWord.category == 'LOOP':
-                checkLoop(generator)
-            elif actualWord.category == 'REPEAT':
+            elif w.category == 'LOOP':
+                checkLoop(w)
+
+            elif w.category == 'REPEAT':
                 checkRepeat(generator=generator)
-
-            actualWord=generator.__next__()
+            w= next(generator)
 
     except StopIteration:
         return True
 
     except Exception as e:
-        return e
+        raise
+        return e.args
 
 
-def checkCommand(actualWord:tuple, generator):
-    checkSeparator(generator.__next__(), 'COLON')
-    if len(actualWord.parameters)==0: return
-    for i in range(len(actualWord.parameters) - 1):
-        checkCategory( nxWord=generator.__next__(), actualWord=actualWord, index=i)
-        checkSeparator(word= generator.__next__(), separator= 'COMMA')
-    checkCategory(nxWord=generator.__next__(), actualWord=actualWord, index=len(actualWord.parameters)-1)
-    checkSeparator(word=generator.__next__(), separator='STMFIN')
+def checkCommand(generator):
+    checkVarName(next(generator))
+    
 
-
-def checkCategory(nxWord:tuple, actualWord:tuple, index:int):
-    if len(actualWord.types)>0 and nxWord.category not in actualWord.types[index]:
+def checkCategory(nxWord:tuple, w:tuple, index:int):
+    if len(w.types)>0 and nxWord.category not in w.types[index]:
         return False, 'El tipo de dato no coincide con los tipos de datos permitidos'
 
 def checkSeparator(word:tuple, separator:str ):
@@ -99,72 +77,59 @@ def checkSeparator(word:tuple, separator:str ):
 
 def checkKW(word:tuple, generator):
 
-    if word.token=='VDEF':
-        checkVarDef(word=word, generator= generator)
+    if word.token== tk.lang['defvar'].token:
+        checkVarDef(generator= generator)
 
-    elif word.category == 'PDEF':
-        checkProcDef(word=word, generator=generator)
+    elif word.token == tk.lang['defproc'].token:
+        checkProcDef(generator=generator)
 
 
-def checkVarDef(word:tuple, generator):
-    word = generator.__next__()
-    while word.token != 'STMFIN':
-        if word.token[0] not in string.ascii_letters: raise Exception(False, "Nombre de variable inválido!")
-        tk.updateVar(name=word.token, type=(), category='VAR')
+def checkVarDef(generator):
 
-        word = generator.__next__()
-        if word.token == 'COMMA':
-            word = generator.__next__()
-        elif word.token != 'STMFIN':
-            raise Exception(False, f'Error en el separador en la definición de variables! "{word.token}"')
+    """
+        Comprueba que las variables sean definidas correctamente
+    """
+    name= next(generator)
+    checkVarName(name)
 
-def checkProcDef(word:tuple, generator):
-    word= generator.__next__()
+    w= next(generator)
+    if w[1] not in ('VAR', 'NUM'): 
+        raise Exception(False, "El valor de una variable no es un número ni otra variable previamente definida")
+    tk.addVar(name[0])
+        
+     
 
-    if word.category=='VAR':
-        if word.token[0] not in string.ascii_letters: raise Exception(False, "Nombre de procedimiento inválido!")
-        tk.updateVar(name=word.token, type=(), category='PROC')
+def checkProcDef(generator):
 
-        checkSeparator(word=generator.__next__(), separator='LSB')
-        checkSeparator(word=generator.__next__(), separator='VBAR')
+    """
+        Comprueba que los procedimientos hayan sido declarados correctamente
+    """
+    
+    checkVarName(token=next(generator))
 
-        word= generator.__next__()
-        while word.token!='VBAR':
-            checkVarName(word)
-
-            word = generator.__next__()
-            if word.token == 'COMMA':
-                word = generator.__next__()
-            elif word.token != 'VBAR':
-                raise Exception(False, f'Error en el separador en la definición de variables! "{word.token}"')
-            word= generator.__next__()
-
-        checkBlock(generator=generator)
-
-    else:
-        raise Exception(False, "Falta el nombre del método!")
+    pass
 
 def checkConditional(generator):
     pass
 
-def checkCondition( actualWord: tuple, generator):
+def checkCondition( w: tuple, generator):
     checkSeparator(generator.__next__(), 'COLON')
 
-    for i in range(len(actualWord.parameters) - 1):
-        if 'cond' in actualWord.parameters:
+    for i in range(len(w.parameters) - 1):
+        if 'cond' in w.parameters:
             checkCondition(generator=generator)
-            actualWord= generator.__next__()
+            w= generator.__next__()
         else:
-            checkCategory(nxWord=generator.__next__(), actualWord=actualWord, index=i)
+            checkCategory(nxWord=generator.__next__(), w=w, index=i)
             checkSeparator(word=generator.__next__(), separator='COMMA')
-    checkCategory(nxWord=generator.__next__(), actualWord=actualWord, index=len(actualWord.parameters) - 1)
+    checkCategory(nxWord=generator.__next__(), w=w, index=len(w.parameters) - 1)
     if generator.__next__().token not in ('STMFIN', 'COMMA'): raise Exception(False,'Se esperaba un separador: ; o ,')
 
 def checkLoop(generator):
     checkSeparator(word=generator.__next__(), separator='COLON')
     var= generator.__next__()
     if var.category != 'CONDITION': raise Exception (False,'Se esperaba una condición!')
-    checkCondition(actualWord=var, generator= generator)
+    checkCondition(w=var, generator= generator)
     if generator.__next__().token != 'DO': raise Exception(False, 'Se esperaba un "DO"')
     if generator.__next__().token != 'LSB': raise Exception(False, 'Se esperaba un bloque: "["')
     checkBlock(generator= generator)
@@ -173,7 +138,7 @@ def checkBlock(generator):
     word = generator.__next__()
     while word.token != 'RSB':
         if word.category == 'COMMAND':
-            checkCommand(actualWord=word, generator=generator)
+            checkCommand(w=word, generator=generator)
         elif word.category == 'CONDITIONAL':
             checkConditional(generator=generator)
         elif word.category == 'LOOP':
@@ -186,20 +151,19 @@ def checkBlock(generator):
 
 def checkRepeat(generator):
     checkSeparator(generator.__next__(), 'COLON')
-    actualWord= generator.__next__()
+    w= generator.__next__()
 
-    for i in range(len(actualWord.parameters) - 1):
-        checkCategory(nxWord=generator.__next__(), actualWord=actualWord, index=i)
+    for i in range(len(w.parameters) - 1):
+        checkCategory(nxWord=generator.__next__(), w=w, index=i)
         checkSeparator(word=generator.__next__(), separator='COMMA')
     checkBlock(generator)
 
-def checkVarName(word:tuple ):
-    if word.token[0] not in string.ascii_letters: raise Exception(False, "Nombre de variable inválido!")
-    tk.updateVar(name=word.token, type=(), category='PROC')
-
+def checkVarName(word):
+    if word[1] != "VAR": raise Exception(False,  "Nombre de variable o procedimiento no válido!")
+    return 
 
 
 
 
 print(initParser(archivo))
-#print(formato(archivo))
+# print(format(archivo))
