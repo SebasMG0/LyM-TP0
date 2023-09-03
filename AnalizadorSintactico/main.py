@@ -7,6 +7,8 @@ archivo= """
         defVar x 0
         defVar y 0
         defVar z 0
+        a=2
+
         """
 
 tk = tokenizador()
@@ -36,7 +38,7 @@ def initParser(cadena:str):
     w = next(generator)
     try:
         while (w):
-            if w.category == 'COMMAND':
+            if w.category in ('COMMAND', 'WORD'):
                 checkCommand(w=w, generator= generator )
 
             elif w.category == 'KW':
@@ -53,6 +55,12 @@ def initParser(cadena:str):
 
             elif w.category == 'REPEAT':
                 checkRepeat(generator=generator)
+
+            elif w.category == 'VAR':
+                checkAssignment(w, generator= generator)
+
+            else: return False, f"La palabra - {w} - no hace parte de ninguna fracción del lenguaje"
+
             w= next(generator)
 
     except StopIteration:
@@ -63,8 +71,17 @@ def initParser(cadena:str):
         return e.args
 
 
-def checkCommand(generator):
-    checkVarName(next(generator))
+def checkCommand(w: tuple, generator):
+    pass
+
+    
+def checkAssignment(w: tuple, generator):
+    aw= next(generator)
+    if aw.token== tk.lang['='].token:
+        checkVarName(word= w)
+        assert next(generator).category in ('VAR', 'NUM'),  (False, f"Definición de variable no válida {w}")
+        tk.addVar(w)
+    
     
 
 def checkCategory(nxWord:tuple, w:tuple, index:int):
@@ -93,8 +110,10 @@ def checkVarDef(generator):
     checkVarName(name)
 
     w= next(generator)
-    if w[1] not in ('VAR', 'NUM'): 
-        raise Exception(False, "El valor de una variable no es un número ni otra variable previamente definida")
+    if w.category not in ('VAR', 'NUM'): 
+        raise Exception(False, "False, El valor de una variable no es un número ni otra variable previamente definida")
+    if tk.isProcDefined(w): 
+        raise Exception((False, f"False, No se puede usar el nombre de un método en la definición de variables: {w}"))
     tk.addVar(name[0])
         
      
@@ -159,7 +178,7 @@ def checkRepeat(generator):
     checkBlock(generator)
 
 def checkVarName(word):
-    if word[1] != "VAR": raise Exception(False,  "Nombre de variable o procedimiento no válido!")
+    if word.category != "VAR": raise Exception(False,  "Nombre de variable o procedimiento no válido!")
     return 
 
 

@@ -8,8 +8,10 @@ class tokenizador():
         self.f = namedtuple("function", 'types category')
         self.dt = namedtuple("datatype", 'token category')
         self.cond = namedtuple("conditional", 'structure category')
+        self.word = namedtuple('word', 'word category')
 
-        self.userVars={}
+        self.userVars={'var' : set(),
+                       'proc': set()}
 
         self.lang = {
             # separator= ';'
@@ -70,6 +72,7 @@ class tokenizador():
             'front': self.dt(token='FRT', category='ORI'),
             'back': self.dt(token='BCK', category='ORI'),
             ';': self.dt(token='STMFIN', category='SYM'),
+            '=': self.dt(token='ASI', category='SYM'),
             ':': self.dt(token='COLON', category='SYM'),
             ',': self.dt(token='COMMA', category='SYM'),
             'defvar': self.dt(token='VDEF', category='KW'),
@@ -104,13 +107,19 @@ class tokenizador():
             try:
                 return self.userVars[word]
             except KeyError:
-                if str.isdigit(word): return word, "NUM"
+                if str.isdigit(word): return self.word(word= word, category= "NUM")
                 if str.isdigit(word[0]): raise Exception (False, f"El nombre de la variable es incorrecto: {word}")
-                return word, "VAR"
+                return self.word( word= word, category="VAR")
                 
     def addVar(self, word):
-        self.userVars[word] = 'VAR'
+        self.userVars['var'].add(word)
 
     def addProc(self, word):
-        self.userVars[word] = 'PROC'
+        self.userVars['proc'].add(word)
+
+    def isVarDefined(self, word):
+        return word.word in self.userVars['var']
+    
+    def isProcDefined(self, word):
+        return word.word in self.userVars['proc']
         
