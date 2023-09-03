@@ -22,7 +22,7 @@ class tokenizador():
             'walk': self.f(
                             types=( ('VAR', 'DIR'),
                                     ('VAR', 'ORI'),
-                                    ('VAR')),
+                                    ('VAR',)),
                             category='COMMAND'),
 
             'leap': self.f(
@@ -31,20 +31,20 @@ class tokenizador():
                                     ('VAR', 'ORI')),
                             category='COMMAND'),
 
-            'turn': self.f( types=(('ORI'), #SPECIAL
-                                   ('DIR')),
+            'turn': self.f( types=(('ORI',), #SPECIAL
+                                   ('DIR',)),
                             category='COMMAND'),
 
-            'turnto': self.f( types=(('ORI')),
+            'turnto': self.f( types=(('ORI',)),
                               category='COMMAND'),
 
-            'drop': self.f(types=(('VAR')), 
+            'drop': self.f(types=(('VAR',)), 
                            category='COMMAND'),
 
-            'get': self.f(types=( ('VAR')),
+            'get': self.f(types=( ('VAR',)),
                           category='COMMAND'),
 
-            'letgo': self.f(types=(('VAR')), 
+            'letgo': self.f(types=(('VAR',)), 
                             category='COMMAND'),
 
             'nop': self.f(types=(), category='COMMAND'),
@@ -79,26 +79,9 @@ class tokenizador():
             'defproc': self.dt(token='PDEF', category='KW'),
             '[': self.dt(token='LSB', category='SYM'),
             ']': self.dt(token='RSB', category='SYM'),
-            '|': self.dt(token='VBAR', category='SYM')
+            '(': self.dt(token='LPAR', category='SYM'),
+            ')': self.dt(token='RPAR', category='SYM')
         }
-
-    def filterSymbol(self, word: str):
-        indices, chars = [], [x for x in word]
-        for i in range(len(chars)):
-            if (chars[i] in self.lang.keys()):
-                indices.append(i)
-
-        if len(indices) == 0:
-            return [word]
-        else:
-            resultado = []
-            cen = 0
-            for i in indices:
-                if len(word[cen:i]) > 0: resultado.append(word[cen:i])
-                if len(word[i]) > 0: resultado.append(word[i])
-                cen = i + 1
-            if len(word[cen:]) > 0: resultado.append(word[cen:])
-            return resultado
 
     def getToken(self, word: str):
         try:
@@ -107,7 +90,7 @@ class tokenizador():
             try:
                 return self.userVars[word]
             except KeyError:
-                if str.isdigit(word): return self.word(word= word, category= "NUM")
+                if str.isdigit(word): return self.word(word= word, category= "VAR")
                 if str.isdigit(word[0]): raise Exception (False, f"El nombre de la variable es incorrecto: {word}")
                 return self.word( word= word, category="VAR")
                 
@@ -122,4 +105,3 @@ class tokenizador():
     
     def isProcDefined(self, word):
         return word.word in self.userVars['proc']
-        
