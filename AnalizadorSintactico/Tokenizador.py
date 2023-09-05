@@ -35,16 +35,16 @@ class tokenizador():
                                    ('DIR',)),
                             category='COMMAND'),
 
-            'turnto': self.f( types=(('ORI',)),
+            'turnto': self.f( types=(('ORI',),),
                               category='COMMAND'),
 
-            'drop': self.f(types=(('VAR',)), 
+            'drop': self.f(types=(('VAR',),), 
                            category='COMMAND'),
 
-            'get': self.f(types=( ('VAR',)),
+            'get': self.f(types=( ('VAR',),),
                           category='COMMAND'),
 
-            'letgo': self.f(types=(('VAR',)), 
+            'letgo': self.f(types=(('VAR',),), 
                             category='COMMAND'),
 
             'nop': self.f(types=(), category='COMMAND'),
@@ -52,14 +52,15 @@ class tokenizador():
             # Conditionals and loops: delimiter= ':', separator= ','
             'if': self.cond(structure=('CONDITION', 'IF', 'BLOCK', 'ELSE', 'BLOCK'), category='CONDITIONAL'),
             'while': self.cond(structure=('CONDITION', 'BLOCK'), category='LOOP'),
+            'else': self.dt(token='else', category='KW'),
 
             # Caso especial
             'repeat': self.f(types=(('VAR', 'BLOCK')), category='REPEAT'), 
 
             # Conditions: delimiter= ':', separator= ','
-            'facing': self.f(types=(('ORI')), category='CONDITION'),
-            'can': self.f(types=(('COMMAND')), category='CONDITION'), #SPECIAL CASE
-            'not': self.f( types=(('CONDITION')), category='CONDITION'),
+            'facing': self.f(types=('DIR'), category='CONDITION'),
+            'can': self.f(types=('COMMAND'), category='CONDITION'), #SPECIAL CASE
+            'not': self.f( types=('CONDITION'), category='CONDITION'),
 
             # Extra types
             'north': self.dt(token='NOR', category='DIR'),
@@ -77,11 +78,29 @@ class tokenizador():
             ',': self.dt(token='COMMA', category='SYM'),
             'defvar': self.dt(token='VDEF', category='KW'),
             'defproc': self.dt(token='PDEF', category='KW'),
-            '[': self.dt(token='LSB', category='SYM'),
-            ']': self.dt(token='RSB', category='SYM'),
+            '{': self.dt(token='LBR', category='SYM'),
+            '}': self.dt(token='RBR', category='SYM'),
             '(': self.dt(token='LPAR', category='SYM'),
             ')': self.dt(token='RPAR', category='SYM')
         }
+
+    def filterSymbol(self, word: str):
+        indices, chars = [], [x for x in word]
+        for i in range(len(chars)):
+            if (chars[i] in self.lang.keys()):
+                indices.append(i)
+
+        if len(indices) == 0:
+            return [word]
+        else:
+            resultado = []
+            cen = 0
+            for i in indices:
+                if len(word[cen:i]) > 0: resultado.append(word[cen:i])
+                if len(word[i]) > 0: resultado.append(word[i])
+                cen = i + 1
+            if len(word[cen:]) > 0: resultado.append(word[cen:])
+            return resultado
 
     def getToken(self, word: str):
         try:
@@ -97,11 +116,13 @@ class tokenizador():
     def addVar(self, word):
         self.userVars['var'].add(word)
 
-    def addProc(self, word):
-        self.userVars['proc'].add(word)
+    def addProc(self, key:str, counter:int ):
+        if counter== 0: self.lang[key]= self.f((), 'COMMAND')
+        else: self.lang[key]= self.f( (('VAR',)*counter,)  , 'COMMAND')
+        print(self.lang[key])
 
     def isVarDefined(self, word):
         return word.word in self.userVars['var']
     
     def isProcDefined(self, word):
-        return word.word in self.userVars['proc']
+        return word.word in self.lang

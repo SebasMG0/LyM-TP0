@@ -3,13 +3,18 @@ import string
 from Tokenizador import tokenizador
 
 archivo= """
-        defVar nom 0
-        defVar x 0
-        defVar y 0
-        defVar z 0
-        a=2
-        b = 3
-        walk(2)
+        {
+        drop (1) ;
+        letGo (2) ;
+        walk (3) ;
+        while can ( walk (4 , north )) {
+        walk (5 , north );
+        while can ( walk (6 , north )) { walk (7 , north )}
+        
+        }
+
+         }
+
         """
 
 tk = tokenizador()
@@ -20,23 +25,30 @@ def format(cadena:str):
     Función para separar las palabras de la cadena
     """
 
-    r=[]
-    for i in cadena.replace('\n', ' ').replace('  ',' ').strip().split(' '):
-        if len(i.strip())==0: continue
-        if len(i)==1: r.append(i); continue
+    # r=[]
+    # for i in cadena.replace('\n', ' ').replace('  ',' ').strip().split(' '):
+    #     if len(i.strip())==0: continue
+    #     if len(i)==1: r.append(i); continue
 
-        li= 0
-        for j, v in enumerate(i.lower()):
-            if v in tk.lang:
-                r.append(i[li:j]) 
-                r.append(i[j])
-                try: li= j+1
-                except: li=0; break
-        if li==0:
-            r.append(i)
-        elif li<= len(i)-1:
-            r.append(i[li:])
-    return r
+    #     li= 0
+    #     for j, v in enumerate(i.lower()):
+    #         if v in tk.lang:
+    #             r.append(i[li:j]) 
+    #             r.append(i[j])
+    #             try: li= j+1
+    #             except: li=0; break
+    #     if li==0:
+    #         r.append(i)
+    #     elif li<= len(i)-1:
+    #         r.append(i[li:])
+    # print(r)
+    # return r
+
+    p, pf= cadena.replace('\n', ' ').replace('  ',' ').split(' '), []
+    for w in p:
+        if len(w)>0:
+            pf+= tk.filterSymbol(w)
+    return pf
 
 def nextWord(instructions:list):
     for w in instructions:
@@ -60,7 +72,7 @@ def initParser(cadena:str):
                 checkConditional(generator= generator)
 
             elif w.category == 'CONDITION':
-                checkCondition(generator= generator)
+                checkCondition(w, generator= generator)
 
             elif w.category == 'LOOP':
                 checkLoop(w)
@@ -70,6 +82,9 @@ def initParser(cadena:str):
 
             elif w.category == 'VAR':
                 checkAssignment(w, generator= generator)
+            
+            elif w.token== tk.getToken("{").token:
+                checkBlock(generator)
 
             else: return False, f"La palabra - {w} - no hace parte de ninguna fracción del lenguaje"
 
@@ -84,18 +99,24 @@ def initParser(cadena:str):
         return False
 
 def checkProcedureCall(w, generator):
+    if w== tk.getToken("nop"): lPar(generator=generator); rPar(generator=generator); return
     word, index, params= next(generator), 0, w.types
 
     assert word.token == tk.lang['('].token, f"Falta '('"
 
     while word.token != tk.lang[')'].token:
         word= next(generator)
-        params= [i for i in params if len(i)>index and i[index]==word.category and (tk.isVarDefined(word) or word.word.isdigit())]
+        
+        if word.category== 'VAR':
+            assert tk.isVarDefined(word) or word.word.isdigit(), "Se está usando una variable no definida"
+
+        params= [i for i in params if len(i)>index and i[index]==word.category]
 
         assert len(params)>0, f"Los parámetros no coinciden para la función {w}"
+        assert index < maxProcArgs(params), f"Hay más parámetros de los requeridos en {w}"        
 
         word= next(generator)
-        assert index < maxProcArgs(params), f"Hay más parámetros de los requeridos en {w}"        
+
         index+=1
 
 def maxProcArgs(params:list):
@@ -156,50 +177,103 @@ def checkProcDef(generator):
     """
         Comprueba que los procedimientos hayan sido declarados correctamente
     """
-    
-    checkVarName(token=next(generator))
+    name= next(generator)
+    checkVarName(word=name)
+    lPar(generator)
 
-    pass
+    word= next(generator)
+    counter, localVars= 0, []
+    while word != tk.getToken(")"):
+        counter+=1
+        if not tk.isVarDefined(word):
+            localVars.append(word.word) 
+            tk.addVar(word.word)
+
+        word= next(generator) 
+       
+        if word== tk.getToken(","):
+            word= next(generator)
+            assert word!= tk.getToken(")")
+
+    assert next(generator)== tk.getToken("{")
+
+    checkBlock(generator=generator)
+    
+    tk.addProc(key=name.word, counter=counter)
+
+    for w in localVars:
+         tk.userVars['var'].discard(w)
 
 def checkConditional(generator):
-    pass
+    word= next(generator)
+    assert word.category == 'CONDITION', "Se esperaba una condición en un condicional"
+    checkCondition(word, generator)
 
-def checkCondition( w: tuple, generator):
-    checkSeparator(generator.__next__(), 'COLON')
+    word= next(generator)
+    assert word.token == tk.getToken("{").token 
+    checkBlock(generator)
 
-    for i in range(len(w.parameters) - 1):
-        if 'cond' in w.parameters:
-            checkCondition(generator=generator)
-            w= generator.__next__()
-        else:
-            checkCategory(nxWord=generator.__next__(), w=w, index=i)
-            checkSeparator(word=generator.__next__(), separator='COMMA')
-    checkCategory(nxWord=generator.__next__(), w=w, index=len(w.parameters) - 1)
-    if generator.__next__().token not in ('STMFIN', 'COMMA'): raise Exception('Se esperaba un separador: ; o ,')
+    assert next(generator).token== tk.getToken("else").token, "Falta 'else' en un condicional"
+    assert next(generator).token == tk.getToken("{").token, "Falta '{' en un condicional"
+    checkBlock(generator)
+
+
+def checkCondition(w: tuple, generator):
+    if w== tk.getToken("not"):
+        assert next(generator).token == tk.getToken(':').token
+        checkCondition(next(generator), generator)
+    elif w== tk.getToken("facing"):
+        lPar(generator)
+        assert next(generator).category==w.types, f"El tipo de dato no es el correcto para la condición 'facing'"
+        rPar(generator)
+    elif w== tk.getToken("can"):
+        lPar(generator)
+        word= next(generator)
+        if word.category == 'COMMAND': checkProcedureCall(word, generator)
+        else: checkAssignment(word, generator)
+        rPar(generator)
+
+    else:
+        raise Exception(f"Condición no reconocida")
+        
+def lPar(generator):
+    assert next(generator).token==tk.getToken("(").token
+
+def rPar(generator):
+    assert next(generator).token==tk.getToken(")").token
 
 def checkLoop(generator):
-    checkSeparator(word=generator.__next__(), separator='COLON')
-    var= generator.__next__()
-    if var.category != 'CONDITION': raise Exception ('Se esperaba una condición!')
-    checkCondition(w=var, generator= generator)
-    if generator.__next__().token != 'DO': raise Exception( 'Se esperaba un "DO"')
-    if generator.__next__().token != 'LSB': raise Exception( 'Se esperaba un bloque: "["')
-    checkBlock(generator= generator)
+    w= next(generator)
+    assert w.category=='CONDITION', "Error en bucle while: se esperaba una condición"
+    checkCondition(w, generator=generator)
+
+    assert next(generator).token== tk.getToken("{").token
+    checkBlock(generator=generator)
+
 
 def checkBlock(generator):
-    word = generator.__next__()
-    while word.token != 'RSB':
+    word = next(generator)
+
+    while word != tk.getToken("}"):
         if word.category == 'COMMAND':
             checkProcedureCall(w=word, generator=generator)
         elif word.category == 'CONDITIONAL':
             checkConditional(generator=generator)
+        elif word.category == 'CONDITION':
+            checkCondition(generator=generator)
         elif word.category == 'LOOP':
             checkLoop(generator=generator)
         elif word.category == 'REPEAT':
             checkRepeat(generator)
-        elif word.category == 'LSB':
-            checkBlock(generator)
-        word = generator.__next__()
+        elif word.category == 'VAR':
+            if not tk.isVarDefined(word) and not word.word.isdigit():
+                checkAssignment(word, generator)
+        
+        word= next(generator)
+        if word == tk.getToken(";"):
+            word= next(generator)
+            assert word!= tk.getToken("}")
+            
 
 def checkRepeat(generator):
     checkSeparator(generator.__next__(), 'COLON')
