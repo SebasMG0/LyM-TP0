@@ -3,7 +3,6 @@ import string
 from Tokenizador import tokenizador
 
 tk = tokenizador()
-vars, functions = {}, {}
 
 def format(cadena:str):
     """
