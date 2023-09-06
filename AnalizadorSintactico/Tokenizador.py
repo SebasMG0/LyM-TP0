@@ -16,7 +16,7 @@ class tokenizador():
         self.lang = {
             # separator= ';'
             'jump': self.f( 
-                            types=(( 'VAR', 'VAR')), 
+                            types=(( 'VAR', 'VAR'),), 
                             category='COMMAND'),
 
             'walk': self.f(
@@ -56,6 +56,7 @@ class tokenizador():
 
             # Caso especial
             'repeat': self.f(types=(('VAR', 'BLOCK')), category='REPEAT'), 
+            'times': self.dt(token='TIMES', category='KW'),
 
             # Conditions: delimiter= ':', separator= ','
             'facing': self.f(types=('DIR'), category='CONDITION'),
@@ -119,7 +120,6 @@ class tokenizador():
     def addProc(self, key:str, counter:int ):
         if counter== 0: self.lang[key]= self.f((), 'COMMAND')
         else: self.lang[key]= self.f( (('VAR',)*counter,)  , 'COMMAND')
-        print(self.lang[key])
 
     def isVarDefined(self, word):
         return word.word in self.userVars['var']
